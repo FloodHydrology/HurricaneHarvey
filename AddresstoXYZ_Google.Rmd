@@ -18,63 +18,36 @@ The goal of this R Notebook is to Geolocate addresses from a well water sampling
 rm(list=ls(all=TRUE))
 
 #Load Required Packages
-library("devtools")
-devtools::install_github("michaeldorman/mapsapi")
-install.packages("mapsapi")
+library(mapsapi)
+library(sf)
+library(parallel)
 library(tidyverse)
+
 
 #Define working directory and database location
 working_dir<-"//nfs/njones-data/Research Projects/Private Wells/Harvey/flow_analysis/"
+
+#Api Key  (Do not leave this here or upload to github)
+api_key <- "NA" 
 ```
 
-#Create function and test 
+#Create API Function
 ```{r function}
-#Create function to access Open Street map API.
-osm_fun <- function(UID=NULL, address = NULL){
+#Create function to access Google API
+google_api<-function(UID=NULL, address = NULL, api_key = NULL){
   
-  #If address is blank, return blank df
-  if(suppressWarnings(is.null(address)))
-    return(data.frame(UID = UID,
-                      address= address,
-                      lon = -9999, 
-                      lat = -9999))
-  #Else, contact API and search for address
-  tryCatch(
-    d <- jsonlite::fromJSON( 
-      gsub('\\@addr\\@', gsub('\\s+', '\\%20', address), 
-           'http://nominatim.openstreetmap.org/search/@addr@?format=json&addressdetails=0&limit=1')
-    ), error = function(c) return(data.frame(UID = UID,
-                                       address= address,
-                                       lon = -9999, 
-                                       lat = -9999))
-  )
+  #Download xml file
+  doc<-mp_geocode(address, key=api_key)
   
-  #If not in OSM, return blank df
-  if(length(d) == 0) return(data.frame(UID = UID,
-                                       address= address,
-                                       lon = -9999, 
-                                       lat = -9999))
+  #Convert to points
+  pnts<-mp_get_points(doc)
   
-  #Make system sleep for 1 second [OSM API requirement]
-  Sys.sleep(1)
+  #Convert to coordinates
+  xy<-st_coordinates(pnts)
   
-  #Export data!
-  return(data.frame(UID = UID,
-                    address= address,
-                    lon = as.numeric(d$lon), 
-                    lat = as.numeric(d$lat)))
+  #export coordinates with Unique ID
+  data.frame(UID, xy)
 }
-
-#As it turns out, OSM is a bit picky about its input. Below is an example. 
-test<-osm_fun(UID     = 1,
-              address = "1, Park Place Ave, Annapolis, Anne Arundel County, MD, 21401, USA")
-
-test2<-osm_fun(UID     =2, 
-               address = "1552, Ritchie Ln, Annapolis, Anne Arundel County, MD, 21401, USA")
-
-test3<-osm_fun(UID     =3, 
-               address = "13019, Chavile, Cypress, Harris County, TX, 77429, USA")
-
 
 ```
 #Well Water Sample Locations
@@ -84,57 +57,41 @@ Its go time!
 #Read well sample location .csv
 df<-read_csv(paste0(working_dir,"locations.csv"))
 
-#Make Corrections to data
-#Change Cypress Zip Code
-df<-df %>%
-  mutate(Sample_Zip = ifelse(str_sub(Sample_Address,
-                                     str_locate(Sample_Address, ",")[,1]+2,
-                                     str_locate(Sample_Address, "TX")[,1]-3) == "Cypress", 
-                             77433,
-                             Sample_Zip))
-
-#for testing
-df<-df[1:10,]
-
-#Clean up dataset
-df<-df %>% 
-  #Remove Lat and long collumns
-  select(-Lat, -Long) %>%
-  #Remove noaddresses
-  filter(Sample_Address!="No address") %>%
-  #create address input
-  mutate(Sample_Address = paste0( #address number
-                                  str_sub(Sample_Address,
-                                          1,
-                                          str_locate(Sample_Address, " ")[,1]-1),
-                                  #Add comma and space
-                                  paste(", "),
-                                  #Road Name
-                                  str_sub(Sample_Address,
-                                          str_locate(Sample_Address, " ")[,1]+1,
-                                          str_locate(Sample_Address, ",")[,1]-1),
-                                  paste(","),
-                                  #Town
-                                  str_sub(Sample_Address,
-                                          str_locate(Sample_Address, ",")[,1]+1,
-                                          str_locate(Sample_Address, "TX")[,1]-3),
-                                  #Add County and state
-                                  paste0(", ", Sample_County, " County, Texas"), 
-                                  #Add zip
-                                  paste0(", ", Sample_Zip),
-                                  #Add country! [USA! USA! USA!]
-                                  ", USA"))
-  
-#Create wrapper function
+#Create wrapper function with error handling
 fun<-function(n){
-  osm_fun(UID =     df$Key[n],
-          address = df$Sample_Address[n])
+  tryCatch(google_api(UID     = df$Key[n],
+                      address = df$Sample_Address[n], 
+                      api_key = api_key), 
+           error=function(e) data.frame(UID=df$Key[n], 
+                                        X=0, 
+                                        Y=0))
 }
 
 #run wrapper function
-x<-lapply(seq(1,10), fun)
-output<-bind_rows(x)
-output
+t0<-Sys.time()
+x1<-mclapply(X=seq(  1, 400),      FUN=fun, mc.cores = 8)
+x2<-mclapply(X=seq(401, 800),      FUN=fun, mc.cores = 8)
+x3<-mclapply(X=seq(801,1200),      FUN=fun, mc.cores = 8)
+x4<-mclapply(X=seq(1200,nrow(df)), FUN=fun, mc.cores = 8)
+tf<-Sys.time()
+save.image("output.RData")
 
+#Collect data
+output1<-bind_rows(x1)
+output2<-bind_rows(x2)
+output3<-bind_rows(x3)
+output4<-bind_rows(x4)
+output<-rbind(output1,output2, output3, output4)
+colnames(output)<-c("Key", "X","Y")
+
+#Merge output with df
+df<-left_join(df, output, by="Key")
+df<- df %>% select(-Lat, -Long)
+
+#Write.csv
+write.csv(df, paste0(working_dir, "address_output.csv")) 
+
+# output
+save.image(paste0(working_dir,"output.RData"))
 ```
 
