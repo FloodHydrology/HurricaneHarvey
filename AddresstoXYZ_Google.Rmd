@@ -10,7 +10,7 @@ output:
     toc: yes
     toc_float: yes
 ---
-The goal of this R Notebook is to Geolocate addresses from a well water sampling campaign. To do this, we will access the Open Streat Maps API using an R Function modified from an example presented in [this blog](https://datascienceplus.com/osm-nominatim-with-r-getting-locations-geo-coordinates-by-its-address/).
+The goal of this R Notebook is to Geolocate addresses from a well water sampling campaign. To do this, we will access the Google Earth API using an the mapsapi R package. 
 
 #Setup
 ```{r setup}
