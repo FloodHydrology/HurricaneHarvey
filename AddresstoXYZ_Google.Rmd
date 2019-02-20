@@ -21,14 +21,15 @@ rm(list=ls(all=TRUE))
 library(mapsapi)
 library(sf)
 library(parallel)
+library(readxl)
 library(tidyverse)
 
 
 #Define working directory and database location
-working_dir<-"//nfs/njones-data/Research Projects/Private Wells/Harvey/flow_analysis/"
+working_dir<-"//nfs/njones-data/Research Projects/Private Wells/Harvey/geolocation/"
 
 #Api Key  (Do not leave this here or upload to github)
-api_key <- "NA" 
+api_key <-  #Find this on 
 ```
 
 #Create API Function
@@ -55,7 +56,12 @@ Its go time!
 
 ```{r Samples}
 #Read well sample location .csv
-df<-read_csv(paste0(working_dir,"locations.csv"))
+df<-read_xlsx(paste0(working_dir,"TWON.xlsx"), sheet = "Sample_Coordinates")
+
+#Find samples without xyz coordinates
+df<-df %>%
+  filter(Lat=="-") %>%
+  filter(Sample_Address!="No address")
 
 #Create wrapper function with error handling
 fun<-function(n){
@@ -68,20 +74,11 @@ fun<-function(n){
 }
 
 #run wrapper function
-t0<-Sys.time()
-x1<-mclapply(X=seq(  1, 400),      FUN=fun, mc.cores = 8)
-x2<-mclapply(X=seq(401, 800),      FUN=fun, mc.cores = 8)
-x3<-mclapply(X=seq(801,1200),      FUN=fun, mc.cores = 8)
-x4<-mclapply(X=seq(1200,nrow(df)), FUN=fun, mc.cores = 8)
-tf<-Sys.time()
-save.image("output.RData")
+x<-mclapply(X=seq(  1, nrow(df)),FUN=fun, mc.cores = 8)
+save.image(working_dir,"output.RData")
 
 #Collect data
-output1<-bind_rows(x1)
-output2<-bind_rows(x2)
-output3<-bind_rows(x3)
-output4<-bind_rows(x4)
-output<-rbind(output1,output2, output3, output4)
+output<-bind_rows(x)
 colnames(output)<-c("Key", "X","Y")
 
 #Merge output with df
