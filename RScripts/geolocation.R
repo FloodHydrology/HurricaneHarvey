@@ -1,19 +1,13 @@
----
-title: "Geolocate Addresses"
-output:
-  html_document:
-    df_print: paged
-    toc: yes
-    toc_float: yes
-  html_notebook:
-    fig_width: 6
-    toc: yes
-    toc_float: yes
----
-The goal of this R Notebook is to Geolocate addresses from a well water sampling campaign. To do this, we will access the Google Earth API using an the mapsapi R package. 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Title: Geolocate Addresses
+#Date: 6/7/2019
+#Coder: C. Nathan Jones (njones@sesync.org)
+#Purpose: The goal of this R Notebook is to Geolocate addresses from a well 
+#         water sampling campaign. To do this, we will access the Google Earth 
+#         API using an the mapsapi R package. 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#Setup
-```{r setup}
+#Setup workspace----------------------------------------------------------------
 #Clear memory
 rm(list=ls(all=TRUE))
 
@@ -29,11 +23,9 @@ library(tidyverse)
 working_dir<-"//nfs/njones-data/Research Projects/Private Wells/Harvey/geolocation/"
 
 #Api Key  (Do not leave this here or upload to github)
-api_key <-  #Find this on 
-```
-
-#Create API Function
-```{r function}
+api_key <-  #Fill in here
+  
+#Create function to interact with API function----------------------------------
 #Create function to access Google API
 google_api<-function(UID=NULL, address = NULL, api_key = NULL){
   
@@ -50,11 +42,7 @@ google_api<-function(UID=NULL, address = NULL, api_key = NULL){
   data.frame(UID, xy)
 }
 
-```
-#Well Water Sample Locations
-Its go time!
-
-```{r Samples}
+#Execute function for well water samples----------------------------------------
 #Read well sample location .csv
 df<-read_xlsx(paste0(working_dir,"TWON.xlsx"), sheet = "Sample_Coordinates")
 
@@ -90,5 +78,3 @@ write.csv(df, paste0(working_dir, "address_output.csv"))
 
 # output
 save.image(paste0(working_dir,"output.RData"))
-```
-
