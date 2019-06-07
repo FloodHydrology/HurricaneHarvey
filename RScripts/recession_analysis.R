@@ -22,7 +22,7 @@ library(tidyr)           #because the tidyverse is strong in you
 library(lubridate)       #datetime formatting is a PITA
 
 #Define data directory
-data_dir<-"//nfs/njones-data/Research Projects/Private Wells/Harvey/flow_analysis"
+data_dir<-"//nfs/njones-data/Research Projects/Private Wells/Harvey/recession_analysis_data"
 
 #Pull required data into R Environment
 df<-read.csv(paste0(data_dir,"/locations.csv"))

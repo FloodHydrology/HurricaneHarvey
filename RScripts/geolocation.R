@@ -2,7 +2,7 @@
 #Title: Geolocate Addresses
 #Date: 6/7/2019
 #Coder: C. Nathan Jones (njones@sesync.org)
-#Purpose: The goal of this R Notebook is to Geolocate addresses from a well 
+#Purpose: The goal of this RScript is to Geolocate addresses from a well 
 #         water sampling campaign. To do this, we will access the Google Earth 
 #         API using an the mapsapi R package. 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
