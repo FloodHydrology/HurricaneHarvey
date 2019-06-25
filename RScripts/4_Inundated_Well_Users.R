@@ -136,7 +136,7 @@ fun<-function(n){
   
   #Create output tibble
   output<-tibble(
-    zip = zip$zip,
+    zip_code = zip$zip,
     total_area = st_area(zip), 
     inun_area  = cellStats(inundation, sum)*(res(inundation)[1]^2),
     prop_inun_area = inun_area/total_area,
@@ -149,7 +149,7 @@ fun<-function(n){
 }
 
 #apply function
-output<-lapply(seq(1, nrow(zip_codes)), fun) %>% bind_rows()
+output<-lapply(seq(1, nrow(zip_codes)), fun) %>% bind_rows() %>% rename(zip = zip_code)
 
 #Left Join to counties sf
 zip_codes<-zip_codes %>%
@@ -181,7 +181,12 @@ tmap_arrange(tm4, tm1, tm2, tm3)
 dev.off()
 
 #Export csv for good measure
-write_csv(counties, paste0(working_dir, "inundated_wells_county.csv"))
+output<-counties %>% 
+  as_tibble() %>%
+  dplyr::select(NAME, total_area, inun_area, prop_inun_area, total_well_users,
+                inun_well_users, prop_inun_wells)
+
+write_csv(output, paste0(working_dir, "inundated_wells_county.csv"))
 
 #Create Initial Zip Code Plots--------------------------------------------------
 #Turn plotting device on
@@ -209,4 +214,7 @@ tmap_arrange(tm4, tm1, tm2, tm3)
 dev.off()
 
 #Export csv for good measure
-write_csv(zip_codes, paste0(working_dir, "inundated_wells_county.csv"))
+output<-zip_codes %>%
+  as_tibble() %>%
+  dplyr::select(zip,total_area,inun_area,prop_inun_area,total_well_users,inun_well_users,prop_inun_wells)
+write_csv(output, paste0(working_dir, "inundated_wells_zip.csv"))
