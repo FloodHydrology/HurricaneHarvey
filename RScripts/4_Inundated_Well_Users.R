@@ -14,6 +14,7 @@ library(tidyverse)
 library(raster)
 library(sf)
 library(fasterize)
+library(tmap)
 
 #Define working directory and database location
 spatial_data_dir<-"//nfs/njones-data/Research Projects/Private Wells/Harvey/spatial_data/"
@@ -79,7 +80,7 @@ for(i in 1:length(files)){
 inundation[inundation==0]<-NA
 inundation<-inundation*0+1  
 
-#Create Summary Stats-----------------------------------------------------------
+#Create Summary Stats (County)--------------------------------------------------
 #Create function to sum by county
 fun<-function(n){
   
@@ -114,7 +115,47 @@ counties<-counties %>%
   dplyr::select(NAME) %>%
   dplyr::left_join(., output)
 
-#Creat Initial Plots-----------------------------------------------------------
+#Create Summary Stats (Zip Code)------------------------------------------------
+#Limit zip codes to county extent
+zip_codes<-zip_codes[counties,] 
+zip_codes %<>%
+  dplyr::rename(zip = ZCTA5CE10) %>%
+  dplyr::select(zip)
+
+#Create function to sum by county
+fun<-function(n){
+  
+  #Select county
+  zip<-zip_codes[n,]
+  
+  #crop inundation and wells to counties
+  wells      <- crop(wells,      zip)
+  inundation <- crop(inundation, zip)
+  wells      <- mask(wells,      zip)
+  inundation <- mask(inundation, zip)
+  
+  #Create output tibble
+  output<-tibble(
+    zip = zip$zip,
+    total_area = st_area(zip), 
+    inun_area  = cellStats(inundation, sum)*(res(inundation)[1]^2),
+    prop_inun_area = inun_area/total_area,
+    total_well_users = cellStats(wells, sum),
+    inun_well_users  = cellStats(wells*inundation, sum), 
+    prop_inun_wells  = inun_well_users/total_well_users)
+  
+  #Export
+  output
+}
+
+#apply function
+output<-lapply(seq(1, nrow(zip_codes)), fun) %>% bind_rows()
+
+#Left Join to counties sf
+zip_codes<-zip_codes %>%
+  dplyr::left_join(., output)
+
+#Creat Initial County Plots-----------------------------------------------------
 #Turn plotting device on
 png(paste0(working_dir, "inundated_wells_county.png"), width=7,height=7, units = "in", res=300)
 tmap_mode("plot")
@@ -141,3 +182,31 @@ dev.off()
 
 #Export csv for good measure
 write_csv(counties, paste0(working_dir, "inundated_wells_county.csv"))
+
+#Create Initial Zip Code Plots--------------------------------------------------
+#Turn plotting device on
+png(paste0(working_dir, "inundated_wells_zip.png"), width=7,height=7, units = "in", res=300)
+tmap_mode("plot")
+
+#Create plots
+tm1<-tm_shape(zip_codes) + 
+  tm_polygons("total_well_users", palette = "BuGn", style = 'quantile', breaks=10) +
+  tm_layout(frame=F, legend.show = T)    
+tm2<-tm_shape(zip_codes) + 
+  tm_polygons("inun_well_users", palette = 'PuRd', style = 'quantile', breaks=10) +
+  tm_layout(frame=F, legend.show = T)      
+tm3<-tm_shape(zip_codes) + 
+  tm_polygons("prop_inun_wells", palette = "YlOrBr", style = 'quantile', breaks=10) +
+  tm_layout(frame=F, legend.show = T)    
+tm4<-tm_shape(zip_codes) + 
+  tm_polygons("prop_inun_area", palette = 'PuBu', style = 'quantile', breaks=10) +
+  tm_layout(frame=F, legend.show = T)    
+
+#plot
+tmap_arrange(tm4, tm1, tm2, tm3)
+
+#Turn plotting device off
+dev.off()
+
+#Export csv for good measure
+write_csv(zip_codes, paste0(working_dir, "inundated_wells_county.csv"))
