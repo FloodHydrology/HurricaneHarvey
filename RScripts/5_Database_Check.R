@@ -184,6 +184,9 @@ df<-df %>%
  #bind rows
  rbind(., update)
 
+#Write Output
+write_csv(df, paste0(data_dir, "updated_addresses.csv"))
+
 #Report
 # 1 Unreadable Address
 # 9 Missing County Information
