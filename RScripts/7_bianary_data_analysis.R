@@ -1,5 +1,5 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Title: Intext calculations
+#Title: Bianary Data Analysis
 #Date: 4/8/2020  
 #Coder: C. Nathan Jones (cnjones7@ua.edu)
 #Purpose: The goal of this RScript is three fold: 
@@ -79,7 +79,7 @@ rapid<-read_xlsx(paste0(data_dir, "All labs/All binary_v2.xlsx"), sheet = 'RAPID
   pivot_longer(-Zip) %>% rename(test=name, zip=Zip) %>%
   group_by(zip, test) %>% summarise(n_pos=sum(value), n_samples = n()) %>% 
   ungroup(zip) %>%  mutate(zip=as.numeric(paste(zip)))
-  
+
 #FEMA Samples~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 fema<-read_xlsx(paste0(data_dir, "All labs/All binary_v2.xlsx"), sheet = 'FEMA') %>% 
   select('Zip', 'TC_Detect', 'EC_Detect') %>% 
@@ -89,13 +89,13 @@ fema<-read_xlsx(paste0(data_dir, "All labs/All binary_v2.xlsx"), sheet = 'FEMA')
   pivot_longer(-Zip) %>% rename(test=name, zip=Zip) %>%
   group_by(zip, test) %>% summarise(n_pos=sum(value),  n_samples = n()) %>% 
   ungroup(zip) %>%  mutate(zip=as.numeric(paste(zip)))
-  
+
 #Combine Datasets~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 df_zip<-bind_rows(brazoria, houston, rapid, fema) %>% 
   group_by(zip, test) %>% 
   summarise(n_pos=sum(n_pos), 
             n_samples = sum(n_samples))
-  
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #County Data--------------------------------------------------------------------
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
