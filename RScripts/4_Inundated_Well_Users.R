@@ -17,7 +17,7 @@ library(fasterize)
 library(tmap)
 
 #Define working directory and database location
-spatial_data_dir<-"//nfs/njones-data/Research Projects/Private Wells/Harvey/spatial_data/"
+spatial_data_dir<-"C:\\Users/cnjones7/Box Sync/My Folders/Research Projects/Private Wells/Harvey/spatial_data/"
 working_dir<-"//nfs/njones-data/Research Projects/Private Wells/Harvey/inundated_wells/"
 
 #Download well and reproject relevant data
