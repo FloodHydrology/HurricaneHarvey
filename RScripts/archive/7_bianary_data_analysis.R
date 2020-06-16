@@ -28,9 +28,9 @@ library(readxl)
 library(tidyverse)
 
 #Define working directory and database location
-working_dir<-"//nfs/njones-data/Research Projects/Private Wells/Harvey/intext_calculations/"
-spatial_dir<-"//nfs/njones-data/Research Projects/Private Wells/Harvey/spatial_data/"
-data_dir<-   "//nfs/njones-data/Research Projects/Private Wells/Harvey/database/"
+working_dir<-"C:\\Users/cnjones7/Box Sync/My Folders/Research Projects/Private Wells/Harvey/intext_calculations/"
+spatial_dir<-"C:\\Users/cnjones7/Box Sync/My Folders/Research Projects/Private Wells/Harvey/spatial_data/"
+data_dir<-   "C:\\Users/cnjones7/Box Sync/My Folders/Research Projects/Private Wells/Harvey/database/"
 
 #Gather data
 zip_shp<-st_read(paste0(spatial_dir, "zip_codes/tl_2015_us_zcta510.shp"))
@@ -118,7 +118,7 @@ df_county<-zip_shp %>%
 
 #Estiamte proportion of area in each zip
 df_county<-
-  mclapply(
+  lapply(
     #Counter for function
     seq(1,nrow(df_county)), 
     #Function         
@@ -133,9 +133,9 @@ df_county<-
       t<-t %>% mutate(prop = prop)
       
       #Export
-      t},
+      t}
     #Number of cores
-    mc.cores = detectCores()
+    #mc.cores = detectCores()
   ) %>% 
   #Bind rows and select distinct rows
   bind_rows() %>% distinct()
