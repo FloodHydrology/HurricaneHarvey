@@ -56,6 +56,9 @@ zip<-st_read(paste0(spatial_dir, "zip_codes/tl_2015_us_zcta510.shp"))
 #Load USDA county rural/urban classifications (https://www.ers.usda.gov/data-products/rural-urban-continuum-codes.aspx)
 usda<-read_csv(paste0(data_dir,"Other datasets\\ruralurbancodes2013.csv"))
 
+#Load CDC country rural/urban classifications (https://www.cdc.gov/nchs/data_access/urban_rural.htm#2013_Urban-Rural_Classification_Scheme_for_Counties)
+cdc<-read_xlsx(paste0(data_dir,"Other datasets\\NCHSURCodes2013.xlsx")) 
+
 #Load County population info (https://demographics.texas.gov/Data/TPEPP/Estimates/)
 tx_pop<-read_csv(paste0(data_dir,"Other datasets\\2018_txpopest_county.csv")) %>% 
   dplyr::select(county,july1_2018_pop_est) %>% 
@@ -84,15 +87,24 @@ counties<-counties %>%
 counties<-counties %>% left_join(., tx_pop)
 
 #Add USDA designations
-usda<-usda %>% 
-  #Filter to Texas
-  filter(State=='TX') %>% 
-  #Select collumns of interest
-  dplyr::select(NAME=County_Name, 
-                USDA = RUCC_2013) %>% 
-  #remove "County" in name
-  mutate(NAME = substr(NAME, 1, (nchar(NAME)-7)))
-counties<-counties %>% left_join(., usda)
+# usda<-usda %>% 
+#   #Filter to Texas
+#   filter(State=='TX') %>% 
+#   #Select collumns of interest
+#   dplyr::select(NAME=County_Name, 
+#                 USDA = RUCC_2013) %>% 
+#   #remove "County" in name
+#   mutate(NAME = substr(NAME, 1, (nchar(NAME)-7)))
+# counties<-counties %>% left_join(., usda)
+
+#Add CDC designations
+cdc<-cdc %>% 
+  filter(`State Abr.` == 'TX') %>% 
+  select(NAME = `County name`, 
+         cdc_code = `2013 code`) %>% 
+  mutate(NAME = str_remove_all(NAME, " County"))
+counties<-counties %>% left_join(., cdc)
+
 
 #crop wells to county extent
 wells<-crop(wells, counties)
@@ -378,44 +390,51 @@ tmap_arrange(pop,
 dev.off()
 
 #5.4 Rural vs city polots-------------------------------------------------------
-counties %>% 
+#Intall packages
+library(ggpubr)
+
+#Edit matrix of interest
+m<-counties %>% 
   #Drop geometry
   st_drop_geometry() %>% 
   #select collumns of interest
-  dplyr::select(USDA, total_well_users, prop_inun_wells) %>% 
+  dplyr::select(cdc_code, inun_well_users, prop_inun_wells) %>% 
+  #Urban/rural classfication
+  mutate(cdc_code = if_else(cdc_code>4, 'Rural', 'Urban')) %>% 
   #Convert to %
-  mutate(prop_inun_wells = prop_inun_wells*100) %>% 
-  #Summarise by USDA class
-  group_by(USDA) %>% 
-  summarise(well_pop_median = median(total_well_users), 
-            well_pop_q1     = quantile(total_well_users, 0.25),
-            well_pop_q3     = quantile(total_well_users, 0.75),
-            inun_median     = median(prop_inun_wells),
-            inun_q1         = quantile(prop_inun_wells, 0.25), 
-            inun_q3         = quantile(prop_inun_wells, 0.75)) %>% 
-  #GGPLOT!!!
-  ggplot(aes(x = well_pop_median, y = inun_median, col = USDA))+
-    geom_errorbar(
-      aes(y = inun_median, xmin = well_pop_q1, xmax = well_pop_q3), 
-      width=0, 
-      col='grey70')+
-    geom_errorbar(
-      aes(x = well_pop_median, ymin = inun_q1, ymax = inun_q3), 
-      width=0, 
-      col='grey70')+
-    geom_point(
-      aes(x = well_pop_median, y = inun_median, col = USDA), 
-      cex=6)+
-    theme_bw() + 
-      ylab("% Wells Inundated") +
-      xlab('Estimated Well Users') +
-      scale_colour_gradient2(
-        low = '#232D4B', 
-        mid="grey70", 
-        high='#E57200', 
-        midpoint = 4) +
-      scale_x_log10()+
-      scale_y_log10()
+  mutate(prop_inun_wells = prop_inun_wells*100) %>% as_tibble() %>% 
+  #Change cdc_code to County Type for legend
+  rename('County Type' = 'cdc_code') 
+
+ggscatterhist(m,
+  #Scatter plot Data
+  x = 'inun_well_users', 
+  y = 'prop_inun_wells', 
+  color = "County Type",
+  #font sizes
+  font.x = c(14), 
+  font.xtickslab = c(11),
+  font.ytickslab = c(11),
+  font.y=c(14),
+  #Scatterplot options
+  palette = c('#E57200','#232D4B'),
+  xlab = "Total well users per county",
+  ylab = "Wells users impacted\nby inundation [%]",
+  size = 6, alpha = 0.7,
+  #histogram options
+  margin.plot.size = 1.75,
+  margin.params = list(
+    fill = "County Type", 
+    color= c('black'),
+    size=0.2),
+  #Legend
+  legend = 'bottom', 
+  legend.title = c("County Type"),
+  font.legend = 14,
+  #Margin Plots
+  # margin.plot = "boxplot",
+  # #Plot Options
+  # ggtheme = theme_bw()
+  )
 
 
-  
