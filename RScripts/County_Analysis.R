@@ -5,23 +5,6 @@
 #Purpose: Estimate the number of well user impacted by Hurricane Harvey by county 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#Gather data on 
-#   1) population
-#   2) well owners
-#   3) testing results
-
-#Make plots:
-
-#Figure 1
-#A) Proportion of well owners (by population)
-#B) Proportion of wells flooded
-#C) # positivte EC
-#D) # positive TC
-
-#Figure 2 histogram of rural vs urban
-
-
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Step 1: Setup workspace--------------------------------------------------------
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -344,50 +327,76 @@ export<-counties %>%
          prop_well_users = total_well_users/pop*100, 
          prop_pos_EC = n_pos_EC/n_samples_EC*100,
          prop_pos_TC = n_pos_TC/n_samples_TC*100) %>%  
-  select(pop, prop_inun_area, prop_well_users, prop_inun_wells, prop_pos_EC, prop_pos_TC) %>% 
-  rename('Total population' = pop, 
-         '% Area inundated' = prop_inun_area,
-         '% Popultion on well water' = prop_well_users, 
-         '% Wells inundated' = prop_inun_wells, 
-         '% Samples EC Positive' = prop_pos_EC, 
-         '% Samples TC Positive' = prop_pos_TC)
+  select(total_well_users, prop_inun_area, prop_well_users, prop_inun_wells,
+         n_samples_EC, n_samples_TC, prop_pos_EC, prop_pos_TC, inun_well_users) %>% 
+  rename("Well users flooded" = inun_well_users,
+         'Well users' = total_well_users, 
+         'Area flooded (%)' = prop_inun_area,
+         'Prop well users (%)' = prop_well_users, 
+         'Well users flooded (%)' = prop_inun_wells, 
+         'EC Samples' = n_samples_EC, 
+         'TC Samples' = n_samples_TC,
+         'EC Pos (%)' = prop_pos_EC, 
+         'TC Pos (%)' = prop_pos_TC)
 
-
+#5.3a Plot data from geospatial analysis~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Turn plotting device on
-png(paste0(output_dir, "county_map.png"), width=7,height=9, units = "in", res=300)
+png(paste0(output_dir, "county_well_map.png"), width=7,height=6, units = "in", res=300)
 tmap_mode("plot")
 
 #Create plots
-pop<-tm_shape(export) + 
-  tm_polygons('Total population', palette = "Greys", style = 'quantile', breaks=10) +
+w1<-tm_shape(export) + 
+  tm_polygons('Well users', palette = "Greys", style = 'fixed', breaks=c(1500,3000,6000,9000,16000,110000)) +
   tm_layout(frame=F, legend.show = T)  
-prop_inun_area<-tm_shape(export) + 
-  tm_polygons('% Area inundated', palette = "Blues", style = 'quantile', breaks=10) +
+w2<-tm_shape(export) + 
+  tm_polygons('Area flooded (%)', palette = "Blues", style = 'fixed', breaks=c(0,1,5,10,25,66)) +
   tm_layout(frame=F, legend.show = T)  
-prop_well_users<-tm_shape(export) + 
-  tm_polygons('% Popultion on well water', palette = "BuPu", style = 'quantile', breaks=10) +
+w3<-tm_shape(export) + 
+  tm_polygons('Well users flooded', palette = "BuPu",style = 'fixed', breaks=c(0,10,50, 250,500,3000)) +
   tm_layout(frame=F, legend.show = T)  
-prop_inun_wells<-tm_shape(export) + 
-  tm_polygons('% Wells inundated', palette = "Reds", style = 'quantile', breaks=10) +
+w4<-tm_shape(export) + 
+  tm_polygons('Well users flooded (%)', palette = "Reds", style = 'fixed', breaks=c(0,0.01,0.02, 0.05,0.1,0.2)) +
   tm_layout(frame=F, legend.show = T) 
-prop_pos_EC<-tm_shape(export) + 
-  tm_polygons('% Samples EC Positive', palette = 'Greens', style = 'quantile', breaks=10) +
-  tm_layout(frame=F, legend.show = T)    
-prop_pos_TC<-tm_shape(export) +
-  tm_polygons('% Samples TC Positive', palette = "YlOrBr", style = 'quantile', breaks=10) +
-  tm_layout(frame=F, legend.show = T)
 
 #plot
-tmap_arrange(pop, 
-             prop_inun_area,
-             prop_well_users,
-             prop_inun_wells,
-             prop_pos_EC, 
-             prop_pos_TC,
-             ncol=2)
+tmap_arrange(w1,w2,w3,w4, ncol=2)
 
 #Turn device off
 dev.off()
+
+#5.3b Plot sampling efforts by county~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Turn plotting device on
+png(paste0(output_dir, "county_testing_map.png"), width=7,height=6, units = "in", res=300)
+tmap_mode("plot")
+
+#Create Indivudal maps
+s1<-tm_shape(export) +
+  tm_polygons("TC Samples", palette = 'GnBu', style = 'fixed', breaks=c(0,5,10,50,200,4300)) +
+  tm_layout(frame=F, legend.show = T) 
+s2<-tm_shape(export) +
+  tm_polygons("EC Samples", palette = 'RdPu', style = 'fixed', breaks=c(0,5,10,50,100,1500))+
+  tm_layout(frame=F, legend.show = T) 
+s3<-prop_pos_TC<-tm_shape(export) +
+  tm_polygons('TC Pos (%)', palette = "YlOrBr", style = 'fixed', breaks=c(0,10,25,50,75,100)) +
+  tm_layout(frame=F, legend.show = T)
+s4<-tm_shape(export) + 
+  tm_polygons('EC Pos (%)', palette = 'Greens', style = 'fixed', breaks=c(0,10,25,50,75,100)) +
+  tm_layout(frame=F, legend.show = T)    
+
+#Print
+tmap_arrange(s1,s2,s3,s4,ncol=2)
+
+#Turn printing device off
+dev.off()
+
+
+
+
+
+
+
+
+
 
 #5.4 Rural vs city polots-------------------------------------------------------
 #Intall packages
