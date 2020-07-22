@@ -124,12 +124,15 @@ pnts<-st_transform(pnts, crs = st_crs(paste(inundation@crs)))
 
 #2.3 Overlay--------------------------------------------------------------------
 #Spatial Overlay
-pnts$flood_modeled<-raster::extract(inundation, pnts, buffer=100, fun=max, na.rm=T)
+pnts$flood_modeled_100<-raster::extract(inundation, pnts, buffer=100, fun=max, na.rm=T)
+pnts$flood_modeled_250<-raster::extract(inundation, pnts, buffer=250, fun=max, na.rm=T)
+pnts$flood_modeled_500<-raster::extract(inundation, pnts, buffer=500, fun=max, na.rm=T)
+pnts$flood_modeled_1000<-raster::extract(inundation, pnts, buffer=1000, fun=max, na.rm=T)
 
 #Tidy data
 pnts<-pnts %>% 
-  mutate(flood_modeled = if_else(is.na(flood_modeled), 0, flood_modeled)) %>% 
-  st_drop_geometry()
+  st_drop_geometry() %>% 
+  select(Key, flood_modeled_100, flood_modeled_250, flood_modeled_500, flood_modeled_1000)
 
 #Summarise data
 flood_survey<-pnts %>% filter(flood == 1) %>% count %>% pull()
