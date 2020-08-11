@@ -347,16 +347,16 @@ tmap_mode("plot")
 #Create plots
 w1<-tm_shape(export) + 
   tm_polygons('Well users', palette = "Greys", style = 'fixed', breaks=c(1500,3000,6000,9000,16000,110000)) +
-  tm_layout(frame=F, legend.show = T)  
+  tm_layout(frame=F, legend.show = T, title="A)", title.size = 14/12)  
 w2<-tm_shape(export) + 
   tm_polygons('Area flooded (%)', palette = "Blues", style = 'fixed', breaks=c(0,1,5,10,25,66)) +
-  tm_layout(frame=F, legend.show = T)  
+  tm_layout(frame=F, legend.show = T, title="B)", title.size = 14/12)  
 w3<-tm_shape(export) + 
   tm_polygons('Well users flooded', palette = "BuPu",style = 'fixed', breaks=c(0,10,50, 250,500,3000)) +
-  tm_layout(frame=F, legend.show = T)  
+  tm_layout(frame=F, legend.show = T, title="C)", title.size = 14/12)  
 w4<-tm_shape(export) + 
   tm_polygons('Well users flooded (%)', palette = "Reds", style = 'fixed', breaks=c(0,0.01,0.02, 0.05,0.1,0.2)) +
-  tm_layout(frame=F, legend.show = T) 
+  tm_layout(frame=F, legend.show = T, title="D)", title.size = 14/12) 
 
 #plot
 tmap_arrange(w1,w2,w3,w4, ncol=2)
@@ -372,16 +372,16 @@ tmap_mode("plot")
 #Create Indivudal maps
 s1<-tm_shape(export) +
   tm_polygons("TC Samples", palette = 'GnBu', style = 'fixed', breaks=c(0,5,10,50,200,4300)) +
-  tm_layout(frame=F, legend.show = T) 
+  tm_layout(frame=F, legend.show = T, title="E)", title.size = 14/12) 
 s2<-tm_shape(export) +
   tm_polygons("EC Samples", palette = 'RdPu', style = 'fixed', breaks=c(0,5,10,50,100,1500))+
-  tm_layout(frame=F, legend.show = T) 
+  tm_layout(frame=F, legend.show = T, title="F)", title.size = 14/12)  
 s3<-prop_pos_TC<-tm_shape(export) +
   tm_polygons('TC Pos (%)', palette = "YlOrBr", style = 'fixed', breaks=c(0,10,25,50,75,100)) +
-  tm_layout(frame=F, legend.show = T)
+  tm_layout(frame=F, legend.show = T, title="G)", title.size = 14/12) 
 s4<-tm_shape(export) + 
   tm_polygons('EC Pos (%)', palette = 'Greens', style = 'fixed', breaks=c(0,10,25,50,75,100)) +
-  tm_layout(frame=F, legend.show = T)    
+  tm_layout(frame=F, legend.show = T, title="H)", title.size = 14/12)     
 
 #Print
 tmap_arrange(s1,s2,s3,s4,ncol=2)
@@ -389,19 +389,27 @@ tmap_arrange(s1,s2,s3,s4,ncol=2)
 #Turn printing device off
 dev.off()
 
+#5.3c Combine county plots~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+png(paste0(output_dir, "county_map_a.png"), 
+    width=7,height=12, units = "in", res=300)
+tmap_mode("plot")
+tmap_arrange(w1, w2, w3, w4,s1,s2,   s3,s4,  ncol=2)
+dev.off()
 
-
-
-
-
-
+png(paste0(output_dir, "county_map_b.png"), 
+    width=14,height=6, units = "in", res=300)
+tmap_mode("plot")
+tmap_arrange(w1, w2, s1,s2, w3, w4, s3,s4,ncol=4)
+dev.off()
 
 
 
 #5.4 Rural vs city polots-------------------------------------------------------
 #Intall packages
 library(ggpubr)
+library(patchwork)
 
+#A. Plot well users impacted by inundation by total well users per county
 #Edit matrix of interest
 m<-counties %>% 
   #Drop geometry
@@ -415,7 +423,7 @@ m<-counties %>%
   #Change cdc_code to County Type for legend
   rename('County Type' = 'cdc_code') 
 
-ggscatterhist(m,
+m1<-ggscatterhist(m,
   #Scatter plot Data
   x = 'inun_well_users', 
   y = 'prop_inun_wells', 
@@ -446,4 +454,87 @@ ggscatterhist(m,
   # ggtheme = theme_bw()
   )
 
+#B. Plot well users impacted by inundation by proporotion of well users
+#Edit matrix of interest
+m<-counties %>% 
+  #Drop geometry
+  st_drop_geometry() %>% 
+  #Estimate proportion of population on well
+  mutate(prop_well_users=total_well_users/pop*100) %>% 
+  #select collumns of interest
+  dplyr::select(cdc_code, prop_well_users, prop_inun_wells) %>% 
+  #Urban/rural classfication
+  mutate(cdc_code = if_else(cdc_code>4, 'Rural', 'Urban')) %>% 
+  #Convert to %
+  mutate(prop_inun_wells = prop_inun_wells*100) %>% as_tibble() %>% 
+  #Change cdc_code to County Type for legend
+  rename('County Type' = 'cdc_code') 
+
+m2<-ggscatterhist(m,
+                  #Scatter plot Data
+                  x = 'prop_well_users', 
+                  y = 'prop_inun_wells', 
+                  color = "County Type",
+                  #font sizes
+                  font.x = c(14), 
+                  font.xtickslab = c(11),
+                  font.ytickslab = c(11),
+                  font.y=c(14),
+                  #Scatterplot options
+                  palette = c('#E57200','#232D4B'),
+                  xlab = "Well users per county [%]",
+                  ylab = "Wells users impacted\nby inundation [%]",
+                  size = 6, alpha = 0.7,
+                  #histogram options
+                  margin.plot.size = 1.75,
+                  margin.params = list(
+                    fill = "County Type", 
+                    color= c('black'),
+                    size=0.2),
+                  #Legend
+                  legend = 'bottom', 
+                  legend.title = c("County Type"),
+                  font.legend = 14,
+                  #Margin Plots
+                  # margin.plot = "boxplot",
+                  # #Plot Options
+                  # ggtheme = theme_bw()
+)
+
+#C.) Export plot
+png(paste0(output_dir, "county_impacts_total.png"), width=7,height=6, units = "in", res=300)
+m1
+dev.off()
+
+png(paste0(output_dir, "county_impacts_percent.png"), width=7,height=6, units = "in", res=300)
+m2
+dev.off()
+
+#5.5 Abstract Art!-------------------------------------------------------------
+m<-counties %>% 
+  #Drop geometry
+  st_drop_geometry() %>%
+  #Urban/rural classfication
+  mutate(cdc_code = if_else(cdc_code>4, 'Rural', 'Urban')) %>% 
+  #select cols of interest
+  select(cdc_code, total_population = pop, total_well_users, inun_well_users) %>% 
+  #pivot long
+  pivot_longer(-cdc_code) %>% 
+  #summarise
+  group_by(name, cdc_code) %>% 
+  summarise(value=sum(value))
+
+m<-m %>% 
+  group_by(name) %>% 
+  summarise(value = sum(value)) %>% 
+  mutate(cdc_code = 'total') %>% 
+  bind_rows(m,.) %>% 
+  arrange(name)
+
+write_csv(m, paste0(output_dir,'abstract_art.csv'))
+  
+#Calcs
+tot_pop<-m %>% filter(cdc_code == 'total', name=='total_population') %>% select(value) %>% pull()
+tot_well<-m %>% filter(cdc_code=='total', name=='total_well_users') %>% select(value) %>% pull()
+1-tot_well/tot_pop
 

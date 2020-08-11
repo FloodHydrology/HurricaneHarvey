@@ -135,8 +135,4 @@ pnts<-pnts %>%
   select(Key, flood_modeled_100, flood_modeled_250, flood_modeled_500, flood_modeled_1000)
 
 #Summarise data
-flood_survey<-pnts %>% filter(flood == 1) %>% count %>% pull()
-flood_model<-pnts %>% filter(flood == 1 & flood_modeled ==1) %>% count %>% pull()
-flood_model/flood_survey
-pnts %>% filter(flood == 1 & flood_modeled ==0) %>% count %>% pull()
-
+write_csv(pnts, paste0(output_dir,"wells_flooded.csv"))
