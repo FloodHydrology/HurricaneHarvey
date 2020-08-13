@@ -2,7 +2,7 @@
 #Title: Intext Calculations
 #Date: 7/20/2020
 #Coder: C. Nathan Jones (cnjones7@ua.edu)
-#Purpose: Calculations for values discussed intext
+#Purpose: Geospatial data for VT samples
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -135,4 +135,32 @@ pnts<-pnts %>%
   select(Key, flood_modeled_100, flood_modeled_250, flood_modeled_500, flood_modeled_1000)
 
 #Summarise data
-write_csv(pnts, paste0(output_dir,"wells_flooded.csv"))
+write_csv(pnts, paste0(output_dir,"sample_locations_inundation.csv"))
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#3.0 Urban/Rural Classification
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Load CDC country rural/urban classifications (https://www.cdc.gov/nchs/data_access/urban_rural.htm#2013_Urban-Rural_Classification_Scheme_for_Counties)
+cdc<-read_xlsx(paste0(data_dir,"Other datasets\\NCHSURCodes2013.xlsx")) %>% 
+  filter(`State Abr.` == 'TX') %>% 
+  select(NAME = `County name`, 
+         cdc_code = `2013 code`) %>% 
+  mutate(NAME = str_remove_all(NAME, " County")) %>% 
+  mutate(cdc_code = if_else(cdc_code>4, 'Rural', 'Urban')) 
+
+#Read VT-TAMU data
+pnts<-read_xlsx(
+  path = paste0(data_dir,'VT-TAMU\\TWON_4.9.2020.xlsx'),
+  sheet = 'Sample Coordinates') %>% 
+  mutate(Lat = as.numeric(Lat), 
+         Long = as.numeric(Long)) %>% 
+  na.omit()s
+
+#Left join
+cdc<-cdc %>% 
+  rename(County = NAME) %>% 
+  left_join(pnts, .) %>% 
+  select(Key, cdc_code)
+
+#Export cdc
+write_csv(cdc, paste0(output_dir,"sample_locations_cdc_code.csv"))

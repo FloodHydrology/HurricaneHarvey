@@ -404,7 +404,7 @@ dev.off()
 
 
 
-#5.4 Rural vs city polots-------------------------------------------------------
+#5.4 Rural vs city plots-------------------------------------------------------_
 #Intall packages
 library(ggpubr)
 library(patchwork)
