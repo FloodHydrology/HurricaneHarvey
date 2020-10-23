@@ -345,7 +345,7 @@ export<-counties %>%
          'EC Pos (%)' = prop_pos_EC, 
          'TC Pos (%)' = prop_pos_TC)
 
-#5.3a Plot data from geospatial analysis~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#A Plot data from geospatial analysis-------------------------------------------
 #Turn plotting device on
 png(paste0(output_dir, "county_well_map.png"), width=7,height=6, units = "in", res=300)
 tmap_mode("plot")
@@ -378,7 +378,7 @@ tmap_arrange(w1,w2,w3,w4, ncol=2)
 #Turn device off
 dev.off()
 
-#5.3b Plot sampling efforts by county~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#B Plot sampling efforts by county----------------------------------------------
 #Turn plotting device on
 png(paste0(output_dir, "county_testing_map.png"), width=7,height=6, units = "in", res=300)
 tmap_mode("plot")
@@ -716,3 +716,46 @@ dev.off()
 
 #Export csv
 zip_shp %>% st_drop_geometry() %>% write_csv(., paste0(output_dir,"zip_wells.csv"))
+
+#5.4 Intext calculations -------------------------------------------------------
+#Isolate County Data
+df<-counties %>% 
+  #Drop geometry
+  st_drop_geometry() %>% as_tibble() %>% 
+  #Urban/rural classfication
+  mutate(cdc_code = if_else(cdc_code>4, 'Rural', 'Urban')) 
+
+#Proportion of county reliant on well water
+df %>% 
+  mutate(prop_well_users = total_well_users/pop*100) %>% 
+  group_by(cdc_code) %>% 
+  summarise(
+    mean = mean(prop_well_users), 
+    min  = min(prop_well_users),
+    max  = max(prop_well_users))
+
+#Percent of counties well pop inundated <0.05
+(df %>% filter(prop_inun_wells<0.05) %>% summarise(n()))/(df %>% summarise(n()))  
+  
+
+#Averge number of well users in counties
+df %>% 
+  group_by(cdc_code) %>% 
+  summarise(mean = mean(total_well_users),
+            min = min(total_well_users),
+            max = max (total_well_users))
+
+#% of counties with <750 users inundated
+(df %>% filter(inun_well_users<750) %>% count())/(df %>% count())
+
+#Count of rural and urban counties with >750 wells inundated
+df %>% 
+  filter(inun_well_users>750) %>% 
+  group_by(cdc_code) %>% 
+  summarise(n())
+
+#Summary of proportion of well users in counties with >750 wells inudnated
+df %>% 
+  #filter(inun_well_users>750) %>% 
+  summarise(total_well_users = sum(total_well_users[inun_well_users>750])/sum(total_well_users)*100,
+            inun_well_users  = sum(inun_well_users[inun_well_users>750])/sum(inun_well_users)*100)
