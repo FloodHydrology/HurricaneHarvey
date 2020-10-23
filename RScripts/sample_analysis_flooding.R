@@ -1,8 +1,8 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Title: Intext Calculations
-#Date: 7/20/2020
+#Title: Sample Analysis: Flooding
+#Date: 10/23/2020
 #Coder: C. Nathan Jones (cnjones7@ua.edu)
-#Purpose: Geospatial data for VT samples
+#Purpose: Examine spatial extent of sampling and flooding
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -27,11 +27,6 @@ output_dir<-"C:\\Users\\cnjones7\\Box Sync\\My Folders\\Research Projects\\Priva
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #2.0 Compare reported flooding to modeled flooding------------------------------
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Step 1: Assemble Inundation raster
-#Step 2: Download and Tidy Survey Data
-#Step 3: Convert to spatial data
-#Step 4: Overlay and compare reported flooding with modeldued inundation
-
 #2.1 Assemble Inundation raster-------------------------------------------------
 #List shape files from Dartmouth Flood Observatory
 files<-list.files(paste0(spatial_dir, "DFO_Inundation")) %>% 
@@ -137,30 +132,3 @@ pnts<-pnts %>%
 #Summarise data
 write_csv(pnts, paste0(output_dir,"sample_locations_inundation.csv"))
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#3.0 Urban/Rural Classification
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Load CDC country rural/urban classifications (https://www.cdc.gov/nchs/data_access/urban_rural.htm#2013_Urban-Rural_Classification_Scheme_for_Counties)
-cdc<-read_xlsx(paste0(data_dir,"Other datasets\\NCHSURCodes2013.xlsx")) %>% 
-  filter(`State Abr.` == 'TX') %>% 
-  select(NAME = `County name`, 
-         cdc_code = `2013 code`) %>% 
-  mutate(NAME = str_remove_all(NAME, " County")) %>% 
-  mutate(cdc_code = if_else(cdc_code>4, 'Rural', 'Urban')) 
-
-#Read VT-TAMU data
-pnts<-read_xlsx(
-  path = paste0(data_dir,'VT-TAMU\\TWON_4.9.2020.xlsx'),
-  sheet = 'Sample Coordinates') %>% 
-  mutate(Lat = as.numeric(Lat), 
-         Long = as.numeric(Long)) %>% 
-  na.omit()s
-
-#Left join
-cdc<-cdc %>% 
-  rename(County = NAME) %>% 
-  left_join(pnts, .) %>% 
-  select(Key, cdc_code)
-
-#Export cdc
-write_csv(cdc, paste0(output_dir,"sample_locations_cdc_code.csv"))

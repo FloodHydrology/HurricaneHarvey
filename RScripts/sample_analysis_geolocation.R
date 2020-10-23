@@ -1,6 +1,6 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Title: Geolocate Addresses
-#Date: 6/7/2019
+#Title: Sample Analysis: Geolocate Addresses
+#Date: 10/23/2020
 #Coder: C. Nathan Jones (njones@sesync.org)
 #Purpose: The goal of this RScript is to Geolocate addresses from a well 
 #         water sampling campaign. To do this, we will access the Google Earth 

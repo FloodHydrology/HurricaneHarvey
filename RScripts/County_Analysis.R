@@ -1,8 +1,10 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Title: Inundated well users by county
-#Date: 6/14/2020
+#Title: County Level Analysis
+#Date: 10/23/2020
 #Coder: C. Nathan Jones (cnjones7@ua.edu)
-#Purpose: Estimate the number of well user impacted by Hurricane Harvey by county 
+#Purpose: Examine spatial extent of (i) publically available well user and inundation
+#            datasets, and (ii) spatial extent of contamination from well water sampling
+#            campaigns. 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -36,9 +38,6 @@ counties<-st_read(paste0(spatial_dir, "counties_tx/counties_texas.shp")) %>%
 zip<-st_read(paste0(spatial_dir, "zip_codes/tl_2015_us_zcta510.shp"))
   #Note, we transform these later!
 
-#Load USDA county rural/urban classifications (https://www.ers.usda.gov/data-products/rural-urban-continuum-codes.aspx)
-usda<-read_csv(paste0(data_dir,"Other datasets\\ruralurbancodes2013.csv"))
-
 #Load CDC country rural/urban classifications (https://www.cdc.gov/nchs/data_access/urban_rural.htm#2013_Urban-Rural_Classification_Scheme_for_Counties)
 cdc<-read_xlsx(paste0(data_dir,"Other datasets\\NCHSURCodes2013.xlsx")) 
 
@@ -68,17 +67,6 @@ counties<-counties %>%
 
 #Add population information
 counties<-counties %>% left_join(., tx_pop)
-
-#Add USDA designations
-# usda<-usda %>% 
-#   #Filter to Texas
-#   filter(State=='TX') %>% 
-#   #Select collumns of interest
-#   dplyr::select(NAME=County_Name, 
-#                 USDA = RUCC_2013) %>% 
-#   #remove "County" in name
-#   mutate(NAME = substr(NAME, 1, (nchar(NAME)-7)))
-# counties<-counties %>% left_join(., usda)
 
 #Add CDC designations
 cdc<-cdc %>% 
@@ -456,8 +444,8 @@ m<-counties %>%
 
 m1<-ggscatterhist(m,
   #Scatter plot Data
-  x = 'inun_well_users', 
-  y = 'total_well_users', 
+  y = 'inun_well_users', 
+  x = 'total_well_users', 
   color = "County Type",
   #font sizes
   font.x = c(14), 
@@ -570,7 +558,7 @@ tot_well<-m %>% filter(cdc_code=='total', name=='total_well_users') %>% select(v
 1-tot_well/tot_pop
 
 #5.6 SI Figures ----------------------------------------------------------------
-#sampled data ------------------------------------------------------------------
+#A. sampled data ------------------------------------------------------------------
 #Convert df_zip results into wider format
 export<-df_zip %>% 
   #Pivot longer
@@ -633,7 +621,7 @@ tmap_arrange(s1,s2,s3,s4,ncol=2)
 #Turn printing device off
 dev.off()
 
-#modeled data-------------------------------------------------------------------
+#B. modeled data-------------------------------------------------------------------
 #Project zip_shp
 zip_shp<-st_transform(zip_shp, crs = st_crs(p))
 
